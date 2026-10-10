@@ -1,0 +1,112 @@
+import { useSimulation } from '@/state/SimulationContext';
+import { STADIUM_A, NODE_MAP } from '@/data/venue';
+import { Settings } from 'lucide-react';
+
+export function ScenarioConfig() {
+  const { scenario } = useSimulation();
+
+  const entryGates = scenario.entryDistribution
+    .sort((a, b) => b.fraction - a.fraction)
+    .map((d) => ({ ...d, label: NODE_MAP[d.gateId]?.label ?? d.gateId }));
+
+  return (
+    <div className="cmd-panel rounded">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--cmd-border)]">
+        <Settings size={13} color="#89867d" />
+        <span className="cmd-label">Scenario Configuration</span>
+      </div>
+      <div className="p-3 space-y-3">
+        {/* crowd */}
+        <Section label="Crowd">
+          <KV label="Total Size" value={scenario.crowdSize.toLocaleString()} />
+          <KV label="Groups" value={String(scenario.crowdGroups.length)} />
+          <KV label="Entry Rate" value={`${scenario.entryRate}/min`} />
+          <KV label="Exit Rate" value={`${scenario.exitRate}/min`} />
+        </Section>
+
+        {/* entry distribution */}
+        <Section label="Entry distribution">
+          <div className="space-y-1.5">
+            {entryGates.map((g) => (
+              <div key={g.gateId}>
+                <div className="flex items-center justify-between text-[10px] mb-0.5">
+                  <span style={{ color: 'var(--cmd-text-dim)' }}>{g.label}</span>
+                  <span className="cmd-mono-value" style={{ color: '#d39a5a' }}>{Math.round(g.fraction * 100)}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-[var(--cmd-bg)] overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${g.fraction * 100}%`, background: '#d39a5a' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* timing */}
+        <Section label="Event timing">
+          <KV label="Start"
+            value={`${String(Math.floor(scenario.timing.startMinutesOfDay / 60)).padStart(2, '0')}:${String(scenario.timing.startMinutesOfDay % 60).padStart(2, '0')}`} />
+          <KV label="Duration" value={`${scenario.timing.durationMin} min`} />
+          <KV label="Arrival" value={scenario.timing.arrivalPattern} />
+          <KV label="Departure" value={scenario.timing.departurePattern} />
+        </Section>
+
+        {/* crowd groups */}
+        <Section label="Crowd groups">
+          <div className="space-y-1">
+            {scenario.crowdGroups.map((g) => (
+              <div key={g.id} className="flex items-center gap-2 text-[10px]">
+                <div className="w-1.5 h-1.5 rounded-sm" style={{ background: 'var(--cmd-text-faint)' }} />
+                <span className="text-white font-medium truncate flex-1">{g.name}</span>
+                <span className="cmd-mono-value" style={{ color: 'var(--cmd-text-dim)' }}>{g.size.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* venue summary */}
+        <Section label="Venue">
+          <KV label="Name" value={STADIUM_A.name} />
+          <KV label="Nodes" value={String(STADIUM_A.nodes.length)} />
+          <KV label="Corridors" value={String(STADIUM_A.edges.length)} />
+          <KV label="Gates" value={String(STADIUM_A.nodes.filter((n) => n.kind === 'entry' || n.kind === 'exit').length)} />
+        </Section>
+
+        {/* special conditions */}
+        <Section label="Special conditions">
+          {scenario.specialConditions.length === 0 ? (
+            <div className="text-[10px]" style={{ color: 'var(--cmd-text-faint)' }}>None configured</div>
+          ) : (
+            <div className="space-y-1">
+              {scenario.specialConditions.map((c) => (
+                <div key={c.id} className="text-[10px] flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#d7a24a' }} />
+                  <span style={{ color: 'var(--cmd-text-dim)' }}>{c.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+      </div>
+    </div>
+  );
+}
+
+function Section({ label, children }: {
+  label: string; children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="cmd-label mb-1.5">{label}</div>
+      <div className="pl-4 space-y-1">{children}</div>
+    </div>
+  );
+}
+
+function KV({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between text-[10px]">
+      <span style={{ color: 'var(--cmd-text-faint)' }}>{label}</span>
+      <span className="cmd-mono-value text-white">{value}</span>
+    </div>
+  );
+}
